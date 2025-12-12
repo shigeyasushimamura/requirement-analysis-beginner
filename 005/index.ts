@@ -34,9 +34,16 @@ export class LockCredential {
   ) {}
 }
 
+export class BookingConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BookingConflictError";
+  }
+}
+
 // 予約（Entity - Aggregate Root）
 export class Reservation {
-  private _status!: "PENDING" | "CONFIRMED" | "CANCELLED";
+  private _status: "PENDING" | "CONFIRMED" | "CANCELLED" = "PENDING";
 
   constructor(
     public readonly reservationId: string,
@@ -68,12 +75,50 @@ export class Reservation {
   public pend() {
     this._status = "PENDING";
   }
+
+  get status() {
+    return this._status;
+  }
 }
 
 export interface ReservationRepository {
   save(reservation: Reservation): Promise<void>;
   findById(reservationId: string): Promise<Reservation> | undefined;
 }
+
+// export class PostgresReservationRepository implements ReservationRepository {
+//   constructor(private pool: Pool) {}
+
+//   async save(reservation: Reservation): Promise<void> {
+//     const query = `
+//       INSERT INTO reservations (reservation_id, room_id, period, status)
+//       VALUES ($1, $2, tstzrange($3, $4, '[)'), $5)
+//       ON CONFLICT (reservation_id) DO UPDATE
+//       SET status = $5
+//     `;
+
+//     try {
+//       await this.pool.query(query, [
+//         reservation.reservationId,
+//         reservation.roomId,
+//         reservation.period.start,
+//         reservation.period.end,
+//         reservation.status
+//       ]);
+//     } catch (e: any) {
+//       // PostgreSQLのエラーコード '23P01' (exclusion_violation) をハンドリング
+//       if (e.code === '23P01') {
+//         throw new BookingConflictError("指定された時間帯は既に予約が埋まっています。");
+//       }
+//       throw e;
+//     }
+//   }
+
+//   async findById(id: string): Promise<Reservation | null> {
+//     // 省略：DBから取得して new Reservation() して返す
+//     return null;
+//   }
+// }
 
 export interface SmartLockService {
   apply(lockCredential: LockCredential): Promise<void>;
