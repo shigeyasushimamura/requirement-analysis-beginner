@@ -148,11 +148,11 @@ class RedisSalesStockRepository implements ISalesStockRepository {
     // 実行
     const result = await this.redis.eval(
       luaScript,
-      2, // Keyの数
-      stockKey,
-      allocationsKey, // KEYS
-      userId,
-      timestamp // ARGV
+      2, // 「KEYS」として渡す引数の数
+      stockKey, // → KEYS[1] に入る
+      allocationsKey, // → KEYS[2] に入る
+      userId, // → ARGV[1] に入る
+      timestamp // → ARGV[2] に入る
     );
 
     if (result === 0) {
